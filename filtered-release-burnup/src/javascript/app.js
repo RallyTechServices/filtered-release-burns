@@ -19,9 +19,19 @@ Ext.define("TSFilteredReleaseBurnup", {
     },
                         
     launch: function() {
+        this._getPortfolioItemTypes().then({
+            success: function(types) {
+                this.bottom_type_path = types[0].get('TypePath');
+                
+                this._addSelectors(this.down('#selector_box'));
+                this._updateData();
+            },
+            failure: function(msg) {
+                Ext.Msg.alert('Cannot load PI types', msg);
+            },
+            scope: this
+        });
 
-        this._addSelectors(this.down('#selector_box'));
-        this._updateData();
     },
     
     onTimeboxScopeChange: function(timeboxScope){
@@ -38,8 +48,8 @@ Ext.define("TSFilteredReleaseBurnup", {
                 xtype:'rallyreleasecombobox',
                 listeners: {
                     select: this._updateData,
-                    ready: this._updateData,
-                    scope: this
+                    ready:  this._updateData,
+                    scope:  this
                 }
             })
         }
@@ -52,9 +62,9 @@ Ext.define("TSFilteredReleaseBurnup", {
                 labelAlign: 'right',
                 minWidth: 250,
                 value: ['zz'],
-                allowClear: true,
+                allowClear: false,
                 setUseNullForNoEntryValue: true,
-                model: 'HierarchicalRequirement',
+                model: this.bottom_type_path,
                 field: this.getSetting('filterField'),
                 multiSelect: true,
                 listeners: {
@@ -159,7 +169,7 @@ Ext.define("TSFilteredReleaseBurnup", {
       
     _getStoreConfig: function() {
         var find = {
-            _TypeHierarchy: {'$in': ['Defect','HierarchicalRequirement']},
+            _TypeHierarchy: {'$in': [this.bottom_type_path]},
             Children: null,
             Release: {'$in': this.releaseObjectIDs}
         }
@@ -177,7 +187,7 @@ Ext.define("TSFilteredReleaseBurnup", {
         
         return {
             find: find,
-            fetch: ['ScheduleState','PlanEstimate',this.filterField,'AcceptedDate'],
+            fetch: ['LeafStoryPlanEstimateTotal','AcceptedLeafStoryPlanEstimateTotal',this.filterField],
             removeUnauthorizedSnapshots: true,
             sort: {
                 _ValidFrom: 1
@@ -193,7 +203,7 @@ Ext.define("TSFilteredReleaseBurnup", {
                 zoomType: 'xy'
             },
             title: {
-                text: 'Release Burnup'
+                text: 'Release Burnup (by ' + this.bottom_type_path + ')'
             },
             xAxis: {
                 title: {
@@ -273,6 +283,48 @@ Ext.define("TSFilteredReleaseBurnup", {
         this.about_dialog = Ext.create('Rally.technicalservices.InfoLink',{});
     },
     
+    _getPortfolioItemTypes: function(workspace) {
+        var deferred = Ext.create('Deft.Deferred');
+                
+        var store_config = {
+            fetch: ['Name','ElementName','TypePath'],
+            model: 'TypeDefinition',
+            filters: [
+                {
+                    property: 'Parent.Name',
+                    operator: '=',
+                    value: 'Portfolio Item'
+                },
+                {
+                    property: 'Creatable',
+                    operator: '=',
+                    value: 'true'
+                }
+            ],
+            autoLoad: true,
+            listeners: {
+                load: function(store, records, successful) {
+                    if (successful){
+                        deferred.resolve(records);
+                    } else {
+                        deferred.reject('Failed to load types');
+                    }
+                }
+            }
+        };
+        
+        if ( !Ext.isEmpty(workspace) ) {            
+            store_config.context = { 
+                project:null,
+                workspace: workspace._ref ? workspace._ref : workspace.get('_ref')
+            };
+        }
+                
+        var store = Ext.create('Rally.data.wsapi.Store', store_config );
+                    
+        return deferred.promise;
+    },
+    
     isExternal: function(){
         return typeof(this.getAppId()) == 'undefined';
     },    
@@ -284,22 +336,23 @@ Ext.define("TSFilteredReleaseBurnup", {
             name: 'filterField',
             xtype: 'rallyfieldcombobox',
             fieldLabel: 'Filter Field',
-            labelWidth: 125,
+            labelWidth: 85,
             labelAlign: 'left',
-            minWidth: 200,
+            minWidth: 175,
             margin: '10 10 10 10',
             autoExpand: false,
             alwaysExpanded: false,                
-            model: 'HierarchicalRequirement',
+            model: this.bottom_type_path,
             _isNotHidden: function(field) {
                 if ( field.hidden ) { return false; }
                 var defn = field.attributeDefinition;
                 if ( Ext.isEmpty(defn) ) { return false; }
                 
-                bad_fields = ['TaskStatus','DefectStatus','TestCaseStatus'];
-                if ( Ext.Array.contains(bad_fields, defn.ElementName) ) { return false; }
+//                bad_fields = ['TaskStatus','DefectStatus','TestCaseStatus'];
+//                if ( Ext.Array.contains(bad_fields, defn.ElementName) ) { return false; }
                 
-                return ( defn.Constrained && defn.AttributeType == 'STRING' );
+                console.log('--', defn.Name, defn.Constrained, defn);
+                return ( defn.Constrained && ( defn.AttributeType == 'STRING' || defn.AttributeType == 'RATING' ));
             }
         }];
     }

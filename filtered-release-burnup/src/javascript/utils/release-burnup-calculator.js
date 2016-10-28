@@ -1,3 +1,7 @@
+/*
+ * This burnup calculator only looks at PIs
+ * 
+ */
 Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
     extend: 'Rally.data.lookback.calculator.TimeSeriesCalculator',
     config: {
@@ -31,9 +35,9 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
             "as": "__Planned",
             "f": function(snapshot) {
                 if (usePoints){
-                    return snapshot.PlanEstimate || 0;
+                    return snapshot.LeafStoryPlanEstimateTotal || 0;
                 } else {
-                    return 1;
+                    return snapshot.LeafStoryCount || 0;
                 }
             }
         }];
@@ -42,14 +46,11 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
         fields.push({
             "as": '__Accepted',
             "f": function(snapshot) {
-                if (!Ext.isEmpty(snapshot.AcceptedDate)) {
-                    if (usePoints){
-                        return snapshot.PlanEstimate || 0;
-                    } else {
-                        return 1;
-                    }
+                if (usePoints){
+                    return snapshot.AcceptedLeafStoryPlanEstimateTotal || 0;
+                } else {
+                    return snapshot.AcceptedLeafStoryCount || 0;
                 }
-                return 0;
             }
         });
 

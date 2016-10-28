@@ -2,18 +2,13 @@
 
 ![screenshot](./images/screenshot.png "chart")
 
+This is a quick burnup chart by release that allows for the filtering of results based on a portfolio item field.  Which field is used for filtering is chosen by an admin in the Edit App Settings panel.  The available fields are limited to those that are single-value drop-downs.
+
+The data in this chart is based upon PortfolioItems that are associated directly with the release.  It will not count stories/defects that are not associated with the PortfolioItems.
 
 ## Development Notes
 
-
-This is a quick burnup chart by release that allows for the filtering of results based on a chosen field.  Which field is used for filtering is chosen by an admin in the Edit App Settings panel.  The available fields are limited to those that are single-value drop-downs.
-
 ** The app applies the filter to lookback, so that means that the filter value has to be true AND the item has to be accepted in order for the thing to count as accepted in the chart on the day.  So you cannot go and add a bunch of values, then look and see how they did over time -- they would only count as part of the the chart starting today.
-
-** The drop-down field comes from Stories.  If a defect doesn't have that field, then it will just count in the -- No Entry -- section.
-
-
-
 
 ### First Load
 
