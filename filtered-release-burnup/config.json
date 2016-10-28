@@ -1,0 +1,6 @@
+{
+    "name": "TS Filtered Release Burnup",
+    "sdk": "2.1",
+    "className": "TSFilteredReleaseBurnup",
+    "story": "US841"
+}
