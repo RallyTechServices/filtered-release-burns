@@ -6,6 +6,8 @@ This is a quick burnup chart by release that allows for the filtering of results
 
 The data in this chart is based upon PortfolioItems that are associated directly with the release.  It will not count stories/defects that are not associated with the PortfolioItems.
 
+This app **can** be placed on a page that is scoped to releases or not.  When on a release-scoped page, it will use the release on the page.  On a non-scoped page, the app will display a release drop-down itself.
+
 ## Development Notes
 
 ** The app applies the filter to lookback, so that means that the filter value has to be true AND the item has to be accepted in order for the thing to count as accepted in the chart on the day.  So you cannot go and add a bunch of values, then look and see how they did over time -- they would only count as part of the the chart starting today.
