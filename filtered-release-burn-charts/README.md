@@ -16,7 +16,9 @@ The admin can choose to show a burndown chart or burnup chart.  The default is b
 
 ![burndown](./images/screenshot2.png "burn down")
 
-On the burndown chart, there is an ideal line.  The ideal line starts at the highest total scope (todo + accepted) and burns to zero on the last day.
+On the burndown chart:
+* The to do line represents the sum of the size of stories related to the feature that have not yet been accepted.
+* The ideal line starts at the highest total scope (todo + accepted) and burns to zero on the last day.
 
 ## Development Notes
 
