@@ -1,0 +1,6 @@
+{
+    "name": "TS Filtered Release Burn Charts",
+    "sdk": "2.1",
+    "className": "TSFilteredReleaseBurnChart",
+    "story": "US841"
+}

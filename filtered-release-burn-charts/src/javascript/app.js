@@ -1,4 +1,4 @@
-Ext.define("TSFilteredReleaseBurnup", {
+Ext.define("TSFilteredReleaseBurnChart", {
     extend: 'Rally.app.App',
     componentCls: 'app',
     logger: new Rally.technicalservices.Logger(),
@@ -19,9 +19,16 @@ Ext.define("TSFilteredReleaseBurnup", {
     },
                         
     launch: function() {
+        
         this._getPortfolioItemTypes().then({
             success: function(types) {
                 this.bottom_type_path = types[0].get('TypePath');
+                
+                if ( Ext.isEmpty(this.getSetting('filterField')) ) {
+                    Ext.Msg.alert('Configuration Issue',
+                        'Use the gear in the upper right to pick Edit App Settings... and set a field to filter on.');
+                    return;
+                }
                 
                 this._addSelectors(this.down('#selector_box'));
                 this._updateData();
@@ -105,11 +112,12 @@ Ext.define("TSFilteredReleaseBurnup", {
     _updateData: function() {
         this.release = this._getTimeboxRecord();
         if ( Ext.isEmpty(this.release) ) { return; }
+        if ( Ext.isEmpty(this.fieldValuePicker) ) { return; }
         
         this._getReleaseOIDs(this.release).then({
             success: function(oids) {
                 this.filterField = this.getSetting('filterField');
-                this.filterValues = this.fieldValuePicker.getValue() || [];
+                this.filterValues =  this.fieldValuePicker.getValue() || [];
   
                 this.releaseObjectIDs = oids;
                 
@@ -351,7 +359,7 @@ Ext.define("TSFilteredReleaseBurnup", {
 //                bad_fields = ['TaskStatus','DefectStatus','TestCaseStatus'];
 //                if ( Ext.Array.contains(bad_fields, defn.ElementName) ) { return false; }
                 
-                console.log('--', defn.Name, defn.Constrained, defn);
+                //console.log('--', defn.Name, defn.Constrained, defn);
                 return ( defn.Constrained && ( defn.AttributeType == 'STRING' || defn.AttributeType == 'RATING' ));
             }
         }];
