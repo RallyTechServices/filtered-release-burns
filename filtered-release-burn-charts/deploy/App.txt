@@ -3,13 +3,13 @@
 <head>
     <title>TS Filtered Release Burn Charts</title>
     <!--  (c) 2016 CA Technologies.  All Rights Reserved. -->
-    <!--  Build Date: Wed Nov 02 2016 18:49:33 GMT-0700 (PDT) -->
+    <!--  Build Date: Wed Nov 02 2016 19:49:09 GMT-0700 (PDT) -->
     
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Wed Nov 02 2016 18:49:33 GMT-0700 (PDT)";
+        var APP_BUILD_DATE = "Wed Nov 02 2016 19:49:09 GMT-0700 (PDT)";
         var STORY    = "US841";
         var BUILDER  = "jmartin";
-        var CHECKSUM = 11443872114;
+        var CHECKSUM = 13653838453;
     </script>
     
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -216,7 +216,7 @@ Ext.define('Rally.technicalservices.Logger',{
  * This burnup calculator only looks at PIs
  * 
  */
-Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
+Ext.define('CA.technicalservices.ReleaseBurndownCalculator',{
     extend: 'Rally.data.lookback.calculator.TimeSeriesCalculator',
     config: {
         usePoints: true
@@ -236,7 +236,6 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
 
         var chart_data = this._transformLumenizeDataToHighchartsSeries(calculator, seriesConfig);
         
-        console.log(chart_data, this._getStartDate(snapshots));
         chart_data = this._removeAfterToday(chart_data);
 
         return chart_data;
@@ -246,12 +245,17 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
         var usePoints = this.usePoints;
 
         var fields = [{
-            "as": "__Planned",
+            "as": "__ToDo",
             "f": function(snapshot) {
                 if (usePoints){
-                    return snapshot.LeafStoryPlanEstimateTotal || 0;
+                    var total_points = snapshot.LeafStoryPlanEstimateTotal || 0;
+                    var accepted_points = snapshot.AcceptedLeafStoryPlanEstimateTotal || 0;
+                    
+                    return total_points - accepted_points;
                 } else {
-                    return snapshot.LeafStoryCount || 0;
+                    var total_count = snapshot.LeafStoryCount || 0;
+                    var accepted_count = snapshot.AcceptedLeafStoryCount || 0;
+                    return total_count - accepted_count;
                 }
             }
         }];
@@ -278,17 +282,59 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
             "field": '__Accepted',
             'as':'Accepted',
             "f": "sum",
-            'display': 'column'
+            'display': 'line'
         });
 
         metrics.push({
-            "field": "__Planned",
-            'as': 'Planned',
+            "field": "__ToDo",
+            'as': 'To Do',
             "f": "sum",
             'display':'line'
         });
 
         return metrics;
+    },
+
+    getSummaryMetricsConfig: function () {
+        return [
+            {
+                'as': '__maxScope',
+                'f': function(seriesData) {                
+                    var max = 0, i = 0;
+                    
+                    Ext.Array.each(seriesData, function(datum){
+                        var todo = datum['To Do'] || 0;
+                        var done = datum['Accepted'] || 0;
+                        var scope = todo + done;
+                        
+                        if ( scope > max ) {
+                            max = scope;
+                        }
+                    });
+                    
+                    return max;
+                 }
+            }
+        ];
+    },
+
+    getDerivedFieldsAfterSummary: function () {
+        return  [
+            {
+                "as": "Ideal",
+                "f": function (row, index, summaryMetrics, seriesData) {
+                    var max = summaryMetrics.__maxScope,
+                        increments = seriesData.length - 1,
+                        incrementAmount;
+                    if(increments === 0) {
+                        return max;
+                    }
+                    incrementAmount = max / increments;
+                    return Math.floor(100 * (max - index * incrementAmount)) / 100;
+                },
+                "display": "line"
+            }
+        ];
     },
     
     _getQuarterStringFor: function(jsdate) {
@@ -313,8 +359,12 @@ Ext.define('CA.technicalservices.ReleaseBurnupCalculator',{
         var length = full_categories.length;
 
         var series_group = Ext.Array.map(chart_data.series, function(series) {
+            console.log(series);
+            if ( series.name == "Ideal" ) { return series; }
+            
             var data = [];
             Ext.Array.each(series.data, function(datum,index){
+                
                 if ( index >= length ) {
                     datum = null;
                 }
@@ -472,7 +522,8 @@ Ext.define("TSFilteredReleaseBurnChart", {
     
     config: {
         defaultSettings: {
-             filterField: null
+             filterField: null,
+             showBurnDown: false
         }
     },
                         
@@ -612,15 +663,19 @@ Ext.define("TSFilteredReleaseBurnChart", {
     
     _updateChart: function() {
         var container = this.down('#display_box');
-        
         container.removeAll();
         
+        var show_burn_down = this.getSetting('showBurnDown');
+        var calculator_type = 'CA.technicalservices.ReleaseBurnupCalculator';
+        if ( show_burn_down ) {
+            calculator_type = 'CA.technicalservices.ReleaseBurndownCalculator'
+        }
         container.add({
             xtype: 'rallychart',
             chartColors: this._getChartColors(),
             storeType: 'Rally.data.lookback.SnapshotStore',
             storeConfig: this._getStoreConfig(),
-            calculatorType: 'CA.technicalservices.ReleaseBurnupCalculator',
+            calculatorType: calculator_type,
             calculatorConfig: {
                 startDate: this._getTimeboxStartDate(),
                 endDate: this._getTimeboxEndDate()
@@ -630,10 +685,19 @@ Ext.define("TSFilteredReleaseBurnChart", {
     },
 
     _getChartColors: function() {
-        return ['#006200','#000'];
+        var show_burn_down = this.getSetting('showBurnDown');
+        var green = '#5FFB17';
+        var black = '#000';
+        var blue = '#3BB9FF';
+        
+        if ( show_burn_down ) {
+            return [ green, blue, black];
+        }
+        return [green,black];
     },
       
     _getStoreConfig: function() {
+        
         var find = {
             _TypeHierarchy: {'$in': [this.bottom_type_path]},
             Children: null,
@@ -664,12 +728,18 @@ Ext.define("TSFilteredReleaseBurnChart", {
     },
     
     _getChartConfig: function() {
+        var show_burn_down = this.getSetting('showBurnDown');
+        var title = 'Release Burnup (by ' + this.bottom_type_path + ')';
+        if ( show_burn_down ) {
+            title = 'Release Burndown (by ' + this.bottom_type_path + ')';
+        }
+        
         return {
             chart: {
                 zoomType: 'xy'
             },
             title: {
-                text: 'Release Burnup (by ' + this.bottom_type_path + ')'
+                text: title
             },
             xAxis: {
                 title: {
@@ -797,15 +867,25 @@ Ext.define("TSFilteredReleaseBurnChart", {
 
     getSettingsFields: function() {
         var me = this;
+        var label_width = 85;
+        var margin = 10;
         
         return [{
+            name: 'showBurnDown',
+            xtype: 'rallycheckboxfield',
+            labelWidth: label_width,
+            labelAlign: 'left',
+            fieldLabel: 'Show Burn Down',
+            margin: margin
+        },
+        {
             name: 'filterField',
             xtype: 'rallyfieldcombobox',
             fieldLabel: 'Filter Field',
-            labelWidth: 85,
+            labelWidth: label_width,
             labelAlign: 'left',
             minWidth: 175,
-            margin: '10 10 10 10',
+            margin: margin,
             autoExpand: false,
             alwaysExpanded: false,                
             model: this.bottom_type_path,

@@ -14,7 +14,8 @@ Ext.define("TSFilteredReleaseBurnChart", {
     
     config: {
         defaultSettings: {
-             filterField: null
+             filterField: null,
+             showBurnDown: false
         }
     },
                         
@@ -154,15 +155,19 @@ Ext.define("TSFilteredReleaseBurnChart", {
     
     _updateChart: function() {
         var container = this.down('#display_box');
-        
         container.removeAll();
         
+        var show_burn_down = this.getSetting('showBurnDown');
+        var calculator_type = 'CA.technicalservices.ReleaseBurnupCalculator';
+        if ( show_burn_down ) {
+            calculator_type = 'CA.technicalservices.ReleaseBurndownCalculator'
+        }
         container.add({
             xtype: 'rallychart',
             chartColors: this._getChartColors(),
             storeType: 'Rally.data.lookback.SnapshotStore',
             storeConfig: this._getStoreConfig(),
-            calculatorType: 'CA.technicalservices.ReleaseBurnupCalculator',
+            calculatorType: calculator_type,
             calculatorConfig: {
                 startDate: this._getTimeboxStartDate(),
                 endDate: this._getTimeboxEndDate()
@@ -172,10 +177,19 @@ Ext.define("TSFilteredReleaseBurnChart", {
     },
 
     _getChartColors: function() {
-        return ['#006200','#000'];
+        var show_burn_down = this.getSetting('showBurnDown');
+        var green = '#5FFB17';
+        var black = '#000';
+        var blue = '#3BB9FF';
+        
+        if ( show_burn_down ) {
+            return [ green, blue, black];
+        }
+        return [green,black];
     },
       
     _getStoreConfig: function() {
+        
         var find = {
             _TypeHierarchy: {'$in': [this.bottom_type_path]},
             Children: null,
@@ -206,12 +220,18 @@ Ext.define("TSFilteredReleaseBurnChart", {
     },
     
     _getChartConfig: function() {
+        var show_burn_down = this.getSetting('showBurnDown');
+        var title = 'Release Burnup (by ' + this.bottom_type_path + ')';
+        if ( show_burn_down ) {
+            title = 'Release Burndown (by ' + this.bottom_type_path + ')';
+        }
+        
         return {
             chart: {
                 zoomType: 'xy'
             },
             title: {
-                text: 'Release Burnup (by ' + this.bottom_type_path + ')'
+                text: title
             },
             xAxis: {
                 title: {
@@ -339,15 +359,25 @@ Ext.define("TSFilteredReleaseBurnChart", {
 
     getSettingsFields: function() {
         var me = this;
+        var label_width = 85;
+        var margin = 10;
         
         return [{
+            name: 'showBurnDown',
+            xtype: 'rallycheckboxfield',
+            labelWidth: label_width,
+            labelAlign: 'left',
+            fieldLabel: 'Show Burn Down',
+            margin: margin
+        },
+        {
             name: 'filterField',
             xtype: 'rallyfieldcombobox',
             fieldLabel: 'Filter Field',
-            labelWidth: 85,
+            labelWidth: label_width,
             labelAlign: 'left',
             minWidth: 175,
-            margin: '10 10 10 10',
+            margin: margin,
             autoExpand: false,
             alwaysExpanded: false,                
             model: this.bottom_type_path,

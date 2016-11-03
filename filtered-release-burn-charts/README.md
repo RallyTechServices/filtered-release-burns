@@ -1,12 +1,22 @@
 #TS Filtered Release Burnup
 
-![screenshot](./images/screenshot.png "chart")
+![burnup](./images/screenshot.png "burn up")
 
-This is a quick burnup chart by release that allows for the filtering of results based on a portfolio item field.  Which field is used for filtering is chosen by an admin in the Edit App Settings panel.  The available fields are limited to those that are single-value drop-downs.
+This is a quick burnup/down chart by release that allows for the filtering of results based on a portfolio item field.  
+Which field is used for filtering is chosen by an admin in the Edit App Settings panel.  The available fields are limited 
+to those that are single-value drop-downs.
 
-The data in this chart is based upon PortfolioItems that are associated directly with the release.  It will not count stories/defects that are not associated with the PortfolioItems.
+The data in this chart is based upon PortfolioItems that are associated directly with the release.  It will not count 
+stories/defects that are not associated with the PortfolioItems.
 
-This app **can** be placed on a page that is scoped to releases or not.  When on a release-scoped page, it will use the release on the page.  On a non-scoped page, the app will display a release drop-down itself.
+This app **can** be placed on a page that is scoped to releases or not.  When on a release-scoped page, it will use the 
+release on the page.  On a non-scoped page, the app will display a release drop-down itself.
+
+The admin can choose to show a burndown chart or burnup chart.  The default is burnup.
+
+![burndown](./images/screenshot2.png "burn down")
+
+On the burndown chart, there is an ideal line.  The ideal line starts at the highest total scope (todo + accepted) and burns to zero on the last day.
 
 ## Development Notes
 
